@@ -4,8 +4,13 @@
  * Implementation of virtio-cryptodev qemu backend device.
  *
  * Dimitris Siakavaras <jimsiak@cslab.ece.ntua.gr>
- * Stefanos Gerangelos <sgerag@cslab.ece.ntua.gr> 
+ * Stefanos Gerangelos <sgerag@cslab.ece.ntua.gr>
  * Konstantinos Papazafeiropoulos <kpapazaf@cslab.ece.ntua.gr>
+ *
+ * Implementation of vq_handle_output():
+ *
+ * Gouliamou Maria-Ethel
+ * Ntouros Evangelos
  *
  */
 
@@ -59,7 +64,7 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
     if (!elem) {
         DEBUG("No item to pop from VQ :(");
         return;
-    } 
+    }
 
     DEBUG("I have got an item from VQ :)");
 

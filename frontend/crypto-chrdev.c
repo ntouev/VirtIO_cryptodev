@@ -8,6 +8,11 @@
  * Dimitris Siakavaras <jimsiak@cslab.ece.ntua.gr>
  * Stefanos Gerangelos <sgerag@cslab.ece.ntua.gr>
  *
+ * Implementation of open, release and ioctl methods by:
+ *
+ * Gouliamou Maria-Ethel
+ * Ntouros Evangelos
+ *
  */
 #include <linux/cdev.h>
 #include <linux/poll.h>
@@ -68,6 +73,11 @@ static int crypto_chrdev_open(struct inode *inode, struct file *filp)
 	unsigned int *syscall_type;
 	int *host_fd;
 
+    struct scatterlist syscall_type_sg, host_fd_sg, *sgs[2];
+    int out_sgs = 0;
+    int in_sgs = 1;
+    unsigned long flags;
+
 	debug("Entering");
 
 	syscall_type = kzalloc(sizeof(*syscall_type), GFP_KERNEL);
@@ -101,17 +111,30 @@ static int crypto_chrdev_open(struct inode *inode, struct file *filp)
 	 * We need two sg lists, one for syscall_type and one to get the
 	 * file descriptor from the host.
 	 **/
-	/* ?? */
+    sg_init_one(&syscall_type_sg, syscall_type, sizeof(syscall_type));
+    sg_init_one(&host_fd_sg, &crof->host_fd, sizeof(host_fd));
+    sgs[out_sgs] = &syscall_type_sg;
+    sgs[in_sgs] = &host_fd_sg;
 
 	/**
 	 * Wait for the host to process our data.
 	 **/
-	/* ?? */
+    //IS IRQSAVE NEEDED??
+    spin_lock_irqsave(&crdev->lock, flags);
 
+    err = virtqueue_add_sgs(crdev->vq, sgs, out_sgs, in_sgs, \
+                                &syscall_type_sg, GFP_ATOMIC);
+    virtqueue_kick(crdev->vq);
+    while(virtqueue_get_buf(crdev->vq, &len) == NULL)
+        ; //Do nothing
+
+    spin_unlock_irqrestore(&crdev->lock, flags);
 
 	/* If host failed to open() return -ENODEV. */
-	/* ?? */
-
+	if (crof->host_fd < 0) {
+        debug("Host failed to open the crypto device");
+        ret = -ENODEV;
+    }
 
 fail:
 	debug("Leaving");
