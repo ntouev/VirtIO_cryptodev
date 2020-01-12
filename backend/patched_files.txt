@@ -1,0 +1,7 @@
+patching file hw/char/Makefile.objs
+patching file hw/char/virtio-cryptodev.c
+patching file hw/virtio/virtio-pci.c
+patching file hw/virtio/virtio-pci.h
+patching file include/hw/pci/pci.h
+patching file include/hw/virtio/virtio-cryptodev.h
+patching file include/standard-headers/linux/virtio_ids.h
