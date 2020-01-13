@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 	char *filename;
 	char error_str[100];
 
-	filename = (argv[1] == NULL) ? "/dev/crypto" : argv[1];
+	filename = (argv[1] == NULL) ? "/dev/cryptodev0" : argv[1];
 	fd = open(filename, O_RDWR, 0);
 	printf("DONE\n");
 	if (fd < 0) {

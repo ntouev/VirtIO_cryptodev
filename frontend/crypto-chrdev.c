@@ -67,16 +67,17 @@ static int crypto_chrdev_open(struct inode *inode, struct file *filp)
 {
 	int ret = 0;
 	int err;
-	unsigned int len;
+	unsigned int num_out, num_in, len;
 	struct crypto_open_file *crof;
 	struct crypto_device *crdev;
 	unsigned int *syscall_type;
 	int *host_fd;
 
     struct scatterlist syscall_type_sg, host_fd_sg, *sgs[2];
-    int out_sgs = 0;
-    int in_sgs = 1;
     unsigned long flags;
+
+    num_out = 0;
+    num_in = 0;
 
 	debug("Entering");
 
@@ -112,9 +113,9 @@ static int crypto_chrdev_open(struct inode *inode, struct file *filp)
 	 * file descriptor from the host.
 	 **/
     sg_init_one(&syscall_type_sg, syscall_type, sizeof(syscall_type));
+    sgs[num_out++] = &syscall_type_sg;
     sg_init_one(&host_fd_sg, &crof->host_fd, sizeof(host_fd));
-    sgs[out_sgs] = &syscall_type_sg;
-    sgs[in_sgs] = &host_fd_sg;
+    sgs[num_out + num_in++] = &host_fd_sg;
 
 	/**
 	 * Wait for the host to process our data.
@@ -122,7 +123,7 @@ static int crypto_chrdev_open(struct inode *inode, struct file *filp)
     //IS IRQSAVE NEEDED??
     spin_lock_irqsave(&crdev->lock, flags);
 
-    err = virtqueue_add_sgs(crdev->vq, sgs, out_sgs, in_sgs, \
+    err = virtqueue_add_sgs(crdev->vq, sgs, num_out, num_in, \
                                 &syscall_type_sg, GFP_ATOMIC);
     virtqueue_kick(crdev->vq);
     while(virtqueue_get_buf(crdev->vq, &len) == NULL)
@@ -135,7 +136,7 @@ static int crypto_chrdev_open(struct inode *inode, struct file *filp)
         debug("Host failed to open the crypto device");
         ret = -ENODEV;
     }
-
+    debug("Host opened /dev/crypto file with fd = %d", crof->host_fd);
 fail:
 	debug("Leaving");
 	return ret;
@@ -156,7 +157,7 @@ static int crypto_chrdev_release(struct inode *inode, struct file *filp)
 	/**
 	 * Send data to the host.
 	 **/
-	/* ?? */
+	
 
 	/**
 	 * Wait for the host to process our data.

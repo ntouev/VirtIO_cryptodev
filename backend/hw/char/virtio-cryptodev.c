@@ -7,11 +7,6 @@
  * Stefanos Gerangelos <sgerag@cslab.ece.ntua.gr>
  * Konstantinos Papazafeiropoulos <kpapazaf@cslab.ece.ntua.gr>
  *
- * Implementation of vq_handle_output():
- *
- * Gouliamou Maria-Ethel
- * Ntouros Evangelos
- *
  */
 
 #include "qemu/osdep.h"
@@ -58,6 +53,9 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
     VirtQueueElement *elem;
     unsigned int *syscall_type;
 
+    //fd_ptr should be head allocated
+    int *fd_ptr;
+
     DEBUG_IN();
 
     elem = virtqueue_pop(vq, sizeof(VirtQueueElement));
@@ -72,12 +70,17 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
     switch (*syscall_type) {
     case VIRTIO_CRYPTODEV_SYSCALL_TYPE_OPEN:
         DEBUG("VIRTIO_CRYPTODEV_SYSCALL_TYPE_OPEN");
-        /* ?? */
+        fd_ptr = elem->in_sg[0].iov_base;
+        *fd_ptr = open(CRYPTODEV_FILENAME, O_RDWR);
+        if (*fd_ptr < 0) {
+            DEBUG("File does not exist");
+        }
+        printf("Opened /dev/crypto file with fd = %d\n", *fd_ptr);
         break;
 
     case VIRTIO_CRYPTODEV_SYSCALL_TYPE_CLOSE:
         DEBUG("VIRTIO_CRYPTODEV_SYSCALL_TYPE_CLOSE");
-        /* ?? */
+
         break;
 
     case VIRTIO_CRYPTODEV_SYSCALL_TYPE_IOCTL:
