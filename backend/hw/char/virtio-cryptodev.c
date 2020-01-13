@@ -7,6 +7,11 @@
  * Stefanos Gerangelos <sgerag@cslab.ece.ntua.gr>
  * Konstantinos Papazafeiropoulos <kpapazaf@cslab.ece.ntua.gr>
  *
+ * Implementation of vq_handle_output():
+ *
+ * Gouliamou Maria-Ethel
+ * Ntouros Evangelos
+ *
  */
 
 #include "qemu/osdep.h"
@@ -54,7 +59,7 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
     unsigned int *syscall_type;
 
     //fd_ptr should be head allocated
-    int *fd_ptr;
+    int *fd_ptr, *fd_ptr_to_close;
 
     DEBUG_IN();
 
@@ -78,9 +83,14 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
         printf("Opened /dev/crypto file with fd = %d\n", *fd_ptr);
         break;
 
+    //better error check is needed
     case VIRTIO_CRYPTODEV_SYSCALL_TYPE_CLOSE:
         DEBUG("VIRTIO_CRYPTODEV_SYSCALL_TYPE_CLOSE");
-
+        fd_ptr_to_close = elem->out_sg[1].iov_base;
+        if (close(*fd_ptr_to_close) < 0)
+            DEBUG("close() error");
+        else
+            printf("Closed /dev/crypto file with fd = %d\n", *fd_ptr_to_close);
         break;
 
     case VIRTIO_CRYPTODEV_SYSCALL_TYPE_IOCTL:
@@ -99,7 +109,9 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
     }
 
     virtqueue_push(vq, elem, 0);
+    DEBUG("pushed data");
     virtio_notify(vdev, vq);
+    DEBUG("notified guest");
     g_free(elem);
 }
 

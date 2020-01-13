@@ -149,6 +149,14 @@ static int crypto_chrdev_release(struct inode *inode, struct file *filp)
 	struct crypto_device *crdev = crof->crdev;
 	unsigned int *syscall_type;
 
+    struct scatterlist syscall_type_sg, host_fd_to_close_sg, *sgs[2];
+    unsigned int len, num_out, num_in;
+    unsigned long flags;
+    int err;
+
+    num_out = 0;
+    num_in = 0;
+
 	debug("Entering");
 
 	syscall_type = kzalloc(sizeof(*syscall_type), GFP_KERNEL);
@@ -157,12 +165,30 @@ static int crypto_chrdev_release(struct inode *inode, struct file *filp)
 	/**
 	 * Send data to the host.
 	 **/
-	
+     //now I send 2 scatterlists
+    sg_init_one(&syscall_type_sg, syscall_type, sizeof(syscall_type));
+    sgs[num_out++] = &syscall_type_sg;
+    sg_init_one(&host_fd_to_close_sg, &crof->host_fd, sizeof(crof->host_fd));
+    sgs[num_out++] = &host_fd_to_close_sg;
+
+    //IS IRQSAVE NEEDED??
+    spin_lock_irqsave(&crdev->lock, flags);
+
+    err = virtqueue_add_sgs(crdev->vq, sgs, num_out, num_in, \
+                                 &syscall_type_sg, GFP_ATOMIC);
+    virtqueue_kick(crdev->vq);
+
 
 	/**
 	 * Wait for the host to process our data.
 	 **/
-	/* ?? */
+    while(virtqueue_get_buf(crdev->vq, &len) == NULL)
+        ; //Do nothing
+
+    spin_unlock_irqrestore(&crdev->lock, flags);
+
+    debug("Host closed /dev/crypto with fd = %d\n", crof->host_fd);
+    /*Check for close() failure?*/
 
 	kfree(crof);
 	debug("Leaving");
