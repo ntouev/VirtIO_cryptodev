@@ -56,7 +56,10 @@ static void vser_reset(VirtIODevice *vdev)
 static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
 {
     VirtQueueElement *elem;
-    unsigned int *syscall_type;
+    unsigned int *syscall_type, *ioctl_type;
+    unsigned char *output_msg, *input_msg, *key;
+    long *host_ret;
+    struct session_op *sess;
 
     //fd_ptr should be head allocated
     int *fd_ptr, *fd_ptr_to_close;
@@ -87,20 +90,57 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
     case VIRTIO_CRYPTODEV_SYSCALL_TYPE_CLOSE:
         DEBUG("VIRTIO_CRYPTODEV_SYSCALL_TYPE_CLOSE");
         fd_ptr_to_close = elem->out_sg[1].iov_base;
-        if (close(*fd_ptr_to_close) < 0)
+        if (close(*fd_ptr_to_close) < 0) {
             DEBUG("close() error");
-        else
+        }
+        else {
             printf("Closed /dev/crypto file with fd = %d\n", *fd_ptr_to_close);
+        }
         break;
 
     case VIRTIO_CRYPTODEV_SYSCALL_TYPE_IOCTL:
         DEBUG("VIRTIO_CRYPTODEV_SYSCALL_TYPE_IOCTL");
-        /* ?? */
-        unsigned char *output_msg = elem->out_sg[1].iov_base;
-        unsigned char *input_msg = elem->in_sg[0].iov_base;
-        memcpy(input_msg, "Host: Welcome to the virtio World!", 35);
-        printf("Guest says: %s\n", output_msg);
-        printf("We say: %s\n", input_msg);
+        fd_ptr = elem->out_sg[1].iov_base;
+        ioctl_type = elem->out_sg[2].iov_base;
+        switch (*ioctl_type) {
+        case VIRTIO_CRYPTODEV_IOCTL_CIOCGSESSION:
+            key = elem->out_sg[3].iov_base;
+            sess = elem->in_sg[0].iov_base;
+            host_ret = elem->in_sg[1].iov_base;
+
+            sess->key = key;
+            *host_ret = ioctl(*fd_ptr, CIOCGSESSION, sess);
+            if (*host_ret)
+                perror("ioctl(CIOCGSESSION)");
+
+            printf("The key is:\n");
+            for(int i=0; i< sess->keylen;i++) {
+                printf("%x", *(sess->key + i));
+            }
+            printf("\n");
+            break;
+
+        case VIRTIO_CRYPTODEV_IOCTL_CIOCFSESSION:
+            output_msg = elem->out_sg[2].iov_base;
+            input_msg = elem->in_sg[0].iov_base;
+            memcpy(input_msg, "Host: Welcome to the virtio CIOCFSESSION World!", 48);
+            printf("Guest says: %s\n", output_msg);
+            printf("We say: %s\n", input_msg);
+            break;
+
+        case VIRTIO_CRYPTODEV_IOCTL_CIOCCRYPT:
+            output_msg = elem->out_sg[2].iov_base;
+            input_msg = elem->in_sg[0].iov_base;
+            memcpy(input_msg, "Host: Welcome to the virtio CIOCCRYPT World!", 45);
+            printf("Guest says: %s\n", output_msg);
+            printf("We say: %s\n", input_msg);
+            break;
+
+        default:
+            DEBUG("Unsupported ioctl command!");
+            break;
+        }
+
         break;
 
     default:
@@ -109,9 +149,7 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
     }
 
     virtqueue_push(vq, elem, 0);
-    DEBUG("pushed data");
     virtio_notify(vdev, vq);
-    DEBUG("notified guest");
     g_free(elem);
 }
 
