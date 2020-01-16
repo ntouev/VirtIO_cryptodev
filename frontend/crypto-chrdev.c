@@ -213,7 +213,8 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
     struct session_op *sess=NULL;
     uint32_t *ses=NULL;
     struct crypt_op *cryp=NULL;
-    unsigned char *src=NULL, *dst=NULL, *iv=NULL;
+    unsigned char *src=NULL, *dst=NULL, *iv=NULL; //or uint8_t???
+    char bytes;
     unsigned long flags;
     num_out = 0;
 	num_in = 0;
@@ -245,8 +246,8 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
         *ioctl_type = VIRTIO_CRYPTODEV_IOCTL_CIOCGSESSION;
 
         //copy session_op struct from userspace
-        sess = (struct session_op *) kzalloc(sizeof(*sess), GFP_KERNEL);
-        if (copy_from_user(sess, (struct session_op *) arg, sizeof(*sess))) {
+        sess = kzalloc(sizeof(*sess), GFP_KERNEL);
+        if (copy_from_user(sess, (struct session_op *)arg, sizeof(*sess))) {
             debug("Copy session_op from user failed");
             ret = -EFAULT;
             goto out;
@@ -312,15 +313,13 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
             goto out;
         }
 
-        debug("%d", cryp->len);
-
         src = kzalloc(sizeof(cryp->len), GFP_KERNEL);
         if (copy_from_user(src, cryp->src, sizeof(cryp->len))) {
             debug("Copy src from user failed");
             ret = -EFAULT;
             goto out;
         }
-            debug("message: '%s'", cryp->src);
+
 
         iv = kzalloc(EALG_MAX_BLOCK_LEN, GFP_KERNEL);
         if (copy_from_user(iv, cryp->iv, EALG_MAX_BLOCK_LEN)) {
@@ -348,7 +347,7 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
         sgs[num_out + num_in++] = &dst_sg;
 
         //DEBUG
-        debug("message: '%s'", cryp->src);
+        //debug("message: '%s'", cryp->src);
         /*
         for (i=0; i<cryp->len; i++) {
             debug("%c", *(cryp->src + i));
@@ -388,19 +387,14 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
 
     switch (cmd) {
     case CIOCGSESSION:
-
+        //restore the pointer sess->key to original userspace address
+        sess->key = ((struct session_op *) arg)->key;
+        //and return the session to the userspace
         if (copy_to_user((struct session_op *) arg, sess, sizeof(*sess))) {
             debug("Copy to user failed!");
             ret = -EFAULT;
             goto out;
         }
-        /*
-        if (copy_to_user(sess->key, key, sizeof(*key))) {
-            debug("Copy key to user failed!");
-            ret = -EFAULT;
-            goto out;
-        }
-        */
         break;
 
     case CIOCFSESSION:

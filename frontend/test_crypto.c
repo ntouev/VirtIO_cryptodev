@@ -58,15 +58,15 @@ static int test_crypto(int cfd)
 	sess.keylen = KEY_SIZE;
 	sess.key = (__u8  __user *)data.key;
 
-    /*
-    printf("Before ioctl\n");
-    printf("cipher: %d\n", sess.cipher);
-    for(int i=0; i<KEY_SIZE; i++) {
-        printf("%x", sess.key[i]);
-    }
-    printf("\n");
 
-    */
+    //printf("Before ioctl\n");
+    //printf("cipher: %d\n", sess.cipher);
+    //for(int i=0; i<KEY_SIZE; i++) {
+    //    printf("%x", sess.key[i]);
+    //}
+    //printf("\n");
+
+
     printf("Starting Session...");
 	if (ioctl(cfd, CIOCGSESSION, &sess)) {
 		perror("ioctl(CIOCGSESSION)");
@@ -75,15 +75,14 @@ static int test_crypto(int cfd)
     printf("[OK]\n");
 
     //printf("%x", sess.key[0]);
-    /*
-    printf("cipher: %d\n", sess.cipher);
-    printf("After ioctl\n");
 
-    for(int i=0; i<KEY_SIZE; i++) {
-        printf("%x", sess.key[i]);
-    }
-    printf("\n");
-    */
+    //printf("cipher: %d\n", sess.cipher);
+    //printf("After ioctl\n");
+
+    //for(int i=0; i<KEY_SIZE; i++) {
+    //    printf("%x", sess.key[i]);
+    //}
+    //printf("\n");
 
     /**
 	 *  Encrypt data.in to data.encrypted
@@ -108,12 +107,13 @@ static int test_crypto(int cfd)
 	printf("Doing decryption of %d bytes of data...", DATA_SIZE);
 	fflush(stdout);
 
+    /*
     printf("Message: \n");
     for(int i=0; i<cryp.len; i++) {
         printf("%x", cryp.src[i]);
     }
     printf("\n");
-
+    */
 	cryp.src = (__u8 __user *)data.encrypted;
 	cryp.dst = (__u8 __user *)data.decrypted;
 	cryp.op = COP_DECRYPT;
