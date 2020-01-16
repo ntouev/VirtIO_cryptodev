@@ -57,9 +57,14 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
 {
     VirtQueueElement *elem;
     unsigned int *syscall_type, *ioctl_type;
-    unsigned char *output_msg, *input_msg, *key;
+    unsigned char *key;
+    //unsigned char *output_msg, *input_msg,
     long *host_ret;
     struct session_op *sess;
+    struct crypt_op *cryp;
+    uint32_t *ses;
+    unsigned char *src, *dst, *iv;
+    //uint16_t *op;
 
     //fd_ptr should be head allocated
     int *fd_ptr, *fd_ptr_to_close;
@@ -104,6 +109,7 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
         ioctl_type = elem->out_sg[2].iov_base;
         switch (*ioctl_type) {
         case VIRTIO_CRYPTODEV_IOCTL_CIOCGSESSION:
+            DEBUG("Entering CIOCGSESSION");
             key = elem->out_sg[3].iov_base;
             sess = elem->in_sg[0].iov_base;
             host_ret = elem->in_sg[1].iov_base;
@@ -118,22 +124,38 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
                 printf("%x", *(sess->key + i));
             }
             printf("\n");
+            DEBUG("Leaving CIOCGSESSION");
             break;
 
         case VIRTIO_CRYPTODEV_IOCTL_CIOCFSESSION:
-            output_msg = elem->out_sg[2].iov_base;
-            input_msg = elem->in_sg[0].iov_base;
-            memcpy(input_msg, "Host: Welcome to the virtio CIOCFSESSION World!", 48);
-            printf("Guest says: %s\n", output_msg);
-            printf("We say: %s\n", input_msg);
+            DEBUG("Entering CIOCFSESSION");
+            ses = elem->out_sg[3].iov_base;
+            host_ret = elem->in_sg[0].iov_base;
+
+            *host_ret = ioctl(*fd_ptr, CIOCFSESSION, ses);
+            if (*host_ret)
+                perror("ioctl(CIOCFSESSION)");
+
+            DEBUG("Leaving CIOCFSESSION");
             break;
 
         case VIRTIO_CRYPTODEV_IOCTL_CIOCCRYPT:
-            output_msg = elem->out_sg[2].iov_base;
-            input_msg = elem->in_sg[0].iov_base;
-            memcpy(input_msg, "Host: Welcome to the virtio CIOCCRYPT World!", 45);
-            printf("Guest says: %s\n", output_msg);
-            printf("We say: %s\n", input_msg);
+            DEBUG("Entering CIOCCRYPT");
+            cryp = elem->out_sg[3].iov_base;
+            src = elem->out_sg[4].iov_base;
+            iv = elem->out_sg[5].iov_base;
+            host_ret = elem->in_sg[0].iov_base;
+            dst = elem->in_sg[1].iov_base;
+
+            cryp->src = src;
+            cryp->dst = dst;
+            cryp->iv = iv;
+            *host_ret = ioctl(*fd_ptr, CIOCCRYPT, cryp);
+            if (*host_ret)
+                perror("ioctl(CIOCCRYPT)");
+
+            printf("\n");
+            DEBUG("Leaving CIOCCRYPT");
             break;
 
         default:
