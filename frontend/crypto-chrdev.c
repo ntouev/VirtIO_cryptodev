@@ -313,13 +313,12 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
             goto out;
         }
 
-        src = kzalloc(sizeof(cryp->len), GFP_KERNEL);
-        if (copy_from_user(src, cryp->src, sizeof(cryp->len))) {
+        src = kzalloc(cryp->len, GFP_KERNEL);
+        if (copy_from_user(src, cryp->src, cryp->len)) {
             debug("Copy src from user failed");
             ret = -EFAULT;
             goto out;
         }
-
 
         iv = kzalloc(EALG_MAX_BLOCK_LEN, GFP_KERNEL);
         if (copy_from_user(iv, cryp->iv, EALG_MAX_BLOCK_LEN)) {
@@ -335,7 +334,7 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
         sgs[num_out++] = &ioctl_type_sg;
         sg_init_one(&cryp_sg, cryp, sizeof(*cryp));                         //out_sg[3]
         sgs[num_out++] = &cryp_sg;
-        sg_init_one(&src_sg, src, sizeof(cryp->len));                       //out_sg[4]
+        sg_init_one(&src_sg, src, cryp->len);                               //out_sg[4]
         sgs[num_out++] = &src_sg;
         sg_init_one(&iv_sg, iv, EALG_MAX_BLOCK_LEN);                        //out_sg[5]
         sgs[num_out++] = &iv_sg;
@@ -343,18 +342,11 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
         //send with W flag (and R)
         sg_init_one(&host_ret_sg, host_ret, sizeof(*host_ret));             //in_sg[0]
         sgs[num_out + num_in++] = &host_ret_sg;
-        sg_init_one(&dst_sg, dst, sizeof(cryp->len));                       //out_sg[1]
+        sg_init_one(&dst_sg, dst, cryp->len);                               //out_sg[1]
         sgs[num_out + num_in++] = &dst_sg;
-
-        //DEBUG
-        //debug("message: '%s'", cryp->src);
-        /*
-        for (i=0; i<cryp->len; i++) {
-            debug("%c", *(cryp->src + i));
-        }
-        */
         break;
-	default:
+
+    default:
 		debug("Unsupported ioctl command");
 		break;
 	}
@@ -383,7 +375,7 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
         break;
 
     case CIOCFSESSION:
-
+        //??????
         if (copy_to_user((uint32_t *)arg, ses, sizeof(*ses))) {
             debug("Copy to user failed!");
             ret = -EFAULT;
@@ -392,14 +384,12 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
         break;
 
     case CIOCCRYPT:
-
+        //return dst data (encrypted/decrypted back to userspace)
         if (copy_to_user(((struct crypt_op *)arg)->dst, dst, cryp->len)) {
             debug("Copy to user failed!");
             ret = -EFAULT;
             goto out;
         }
-        //debug("We said: '%s'", output_msg);
-    	//debug("Host answered: '%s'", input_msg);
         break;
 
     default:
@@ -411,7 +401,7 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
 out:
     debug("Leaving ioctl with ret value %ld", ret);
 
-    //FREE UP SPACE!!!
+    //FREE UP SPACE
     kfree(cryp);
     kfree(dst);
     kfree(src);
