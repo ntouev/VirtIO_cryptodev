@@ -67,12 +67,14 @@ static int test_crypto(int cfd)
     printf("\n");
 
     */
+    printf("Starting Session...");
 	if (ioctl(cfd, CIOCGSESSION, &sess)) {
 		perror("ioctl(CIOCGSESSION)");
 		return 1;
 	}
+    printf("[OK]\n");
 
-    printf("%x", sess.key[0]);
+    //printf("%x", sess.key[0]);
     /*
     printf("cipher: %d\n", sess.cipher);
     printf("After ioctl\n");
@@ -105,6 +107,13 @@ static int test_crypto(int cfd)
 	 **/
 	printf("Doing decryption of %d bytes of data...", DATA_SIZE);
 	fflush(stdout);
+
+    printf("Message: \n");
+    for(int i=0; i<cryp.len; i++) {
+        printf("%x", cryp.src[i]);
+    }
+    printf("\n");
+
 	cryp.src = (__u8 __user *)data.encrypted;
 	cryp.dst = (__u8 __user *)data.decrypted;
 	cryp.op = COP_DECRYPT;
@@ -129,10 +138,12 @@ static int test_crypto(int cfd)
 	/**
 	 *  Finish crypto session
 	 **/
+    printf("Ending Session...");
 	if (ioctl(cfd, CIOCFSESSION, &sess.ses)) {
 		perror("ioctl(CIOCFSESSION)");
 		return 1;
 	}
+	printf("[OK]\n");
 
 	return 0;
 }
