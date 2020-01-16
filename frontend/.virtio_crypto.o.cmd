@@ -1,1 +1,0 @@
-cmd_/home/user/host/frontend/virtio_crypto.o := ld -m elf_x86_64  -z max-page-size=0x200000    -r -o /home/user/host/frontend/virtio_crypto.o /home/user/host/frontend/crypto-module.o /home/user/host/frontend/crypto-chrdev.o 

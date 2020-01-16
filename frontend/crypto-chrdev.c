@@ -359,13 +359,6 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
 		break;
 	}
 
-    /*
-    debug("The key is:");
-    for(i=0; i< sess->keylen;i++) {
-        debug("%x", *(key + i));
-    }
-    */
-
 	/**
 	 * Wait for the host to process our data.
 	 **/
@@ -376,14 +369,6 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
 	while (virtqueue_get_buf(vq, &len) == NULL)
 		/* do nothing */;
     spin_unlock_irqrestore(&crdev->lock, flags);
-
-    /*
-    debug("The key after ioctl is:");
-    for(i=0; i<sess->keylen; i++) {
-        debug("%x", *(key + i));
-    }
-    debug("cipher: %d\tkeylen: %d", sess->cipher, sess->keylen);
-    */
 
     switch (cmd) {
     case CIOCGSESSION:
