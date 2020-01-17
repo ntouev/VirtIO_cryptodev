@@ -1,4 +1,4 @@
-## Files after implementing the patch to qemu-3.0.0/  
+## New/Changed files after implementing the patch to qemu-3.0.0/  
 
 * hw/char/Makefile.objs
 * hw/char/virtio-cryptodev.c
@@ -8,6 +8,6 @@
 * include/hw/virtio/virtio-cryptodev.h
 * include/standard-headers/linux/virtio_ids.h
 
-## Changed files in the final code
+## Changed files after current project 
 
 * hw/char/virtio-cryptodev.c

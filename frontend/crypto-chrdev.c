@@ -120,8 +120,7 @@ static int crypto_chrdev_open(struct inode *inode, struct file *filp)
 	/**
 	 * Wait for the host to process our data.
 	 **/
-    //IS IRQSAVE NEEDED??
-    spin_lock_irqsave(&crdev->lock, flags);
+    spin_lock_irqsave(&crdev->lock, flags);     //IS IRQSAVE NEEDED??
 
     err = virtqueue_add_sgs(crdev->vq, sgs, num_out, num_in, \
                                 &syscall_type_sg, GFP_ATOMIC);
@@ -171,8 +170,7 @@ static int crypto_chrdev_release(struct inode *inode, struct file *filp)
     sg_init_one(&host_fd_to_close_sg, &crof->host_fd, sizeof(crof->host_fd));
     sgs[num_out++] = &host_fd_to_close_sg;
 
-    //IS IRQSAVE NEEDED??
-    spin_lock_irqsave(&crdev->lock, flags);
+    spin_lock_irqsave(&crdev->lock, flags);         //IS IRQSAVE NEEDED??
     err = virtqueue_add_sgs(crdev->vq, sgs, num_out, num_in, \
                                  &syscall_type_sg, GFP_ATOMIC);
     virtqueue_kick(crdev->vq);
@@ -184,7 +182,10 @@ static int crypto_chrdev_release(struct inode *inode, struct file *filp)
     spin_unlock_irqrestore(&crdev->lock, flags);
 
     debug("Host closed /dev/crypto with fd = %d\n", crof->host_fd);
-    /*Check for close() failure?*/
+    /*
+     * Check for close() failure?
+     * Just add a host_ret pointer just like in ioctl methods below
+     */
 
 	kfree(crof);
 	debug("Leaving");
@@ -213,7 +214,7 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
     struct session_op *sess=NULL;
     uint32_t *ses=NULL;
     struct crypt_op *cryp=NULL;
-    unsigned char *src=NULL, *dst=NULL, *iv=NULL; //or uint8_t???
+    unsigned char *src=NULL, *dst=NULL, *iv=NULL; //or uint8_t? Would it be the same?
     char bytes;
     unsigned long flags;
     num_out = 0;
@@ -246,6 +247,7 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
         *ioctl_type = VIRTIO_CRYPTODEV_IOCTL_CIOCGSESSION;
 
         //copy session_op struct from userspace
+        //now sess is in kernel space but points to userspace
         sess = kzalloc(sizeof(*sess), GFP_KERNEL);
         if (copy_from_user(sess, (struct session_op *)arg, sizeof(*sess))) {
             debug("Copy session_op from user failed");
@@ -254,6 +256,8 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
         }
 
         //copy key from userspace
+        //sess has only a pointer to the string key
+        //in order to have the actual key value I should copy that too
         key = kzalloc(sess->keylen, GFP_KERNEL);
         if (copy_from_user(key, sess->key, sess->keylen)) {
             debug("Copy key from user failed");
@@ -302,7 +306,6 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
 	case CIOCCRYPT:
 		debug("CIOCCRYPT");
 
-        //define ioctl command
         ioctl_type = kzalloc(sizeof(*ioctl_type), GFP_KERNEL);
         *ioctl_type = VIRTIO_CRYPTODEV_IOCTL_CIOCCRYPT;
 
@@ -375,7 +378,7 @@ static long crypto_chrdev_ioctl(struct file *filp, unsigned int cmd,
         break;
 
     case CIOCFSESSION:
-        //??????
+        //needed??????
         if (copy_to_user((uint32_t *)arg, ses, sizeof(*ses))) {
             debug("Copy to user failed!");
             ret = -EFAULT;

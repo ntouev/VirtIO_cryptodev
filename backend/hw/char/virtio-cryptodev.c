@@ -94,6 +94,7 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
     //better error check is needed
     case VIRTIO_CRYPTODEV_SYSCALL_TYPE_CLOSE:
         DEBUG("VIRTIO_CRYPTODEV_SYSCALL_TYPE_CLOSE");
+        //fd_ptr could be used. No actual reason why fd_ptr_to_close is used
         fd_ptr_to_close = elem->out_sg[1].iov_base;
         if (close(*fd_ptr_to_close) < 0) {
             DEBUG("close() error");
