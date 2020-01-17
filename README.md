@@ -1,7 +1,7 @@
 # VirtIO-cryptodev
 
 ## Description
-This repository contains the development of a driver for **Cryptographic Accelerators**, in virtual environments (QEMU).
+This repository contains the development of a **driver for Cryptographic Accelerators**, in virtual environments (QEMU).
 
 The project is devided into three sections:
 * Implementation of a simple **unencrypted chat** between two peers using [BSD sockets](https://en.wikipedia.org/wiki/Berkeley_sockets).
@@ -38,12 +38,12 @@ $ ./client 127.0.0.1 35001
 $ ./crypto-client 127.0.0.1 35001
 ```
 
-In both situations testing the traffic can be done with:
+**In both situations testing the traffic can be done with:**
 ```console
 $ sudo tcpdump -A -i lo tcp -nnn -XXX -vvv
 ```
 
-In the encrypted chat the original data sent shouldn't be understood.
+*In the encrypted chat the original data sent shouldn't be understood.*
 
 ### Driver
 
@@ -54,7 +54,7 @@ In the encrypted chat the original data sent shouldn't be understood.
 * Apply the patch running inside the *Qemu-3.0.0/* directory
 
 ```console
-$ patch -p1 <path to qemu-3.0.0_helpcode.patch>/qemu-3.0.0_helpcode.patch
+$ patch -p1 < <path to qemu-3.0.0_helpcode.patch>/qemu-3.0.0_helpcode.patch
 ```
 
 * Replace the source code of Qemu-3.0.0 in the associated files, with the code given in this repository under *backend/* directory.
