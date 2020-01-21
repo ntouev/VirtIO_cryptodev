@@ -8,6 +8,7 @@
 * include/hw/virtio/virtio-cryptodev.h
 * include/standard-headers/linux/virtio_ids.h
 
-## Changed files after current project 
+## Changed files after current project
 
 * hw/char/virtio-cryptodev.c
+* include/hw/virtio/virtio-cryptodev.h

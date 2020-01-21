@@ -59,7 +59,8 @@ $ patch -p1 < <path to qemu-3.0.0_helpcode.patch>/qemu-3.0.0_helpcode.patch
 
 * Replace the source code of Qemu-3.0.0 in the associated files, with the code given in this repository under *backend/* directory.
 
-* Boot the VM
+* Boot the VM  
+(*some changes in the boot up script of qemu should be implemented:  **-device virtio-cryptodev-pci** flag should be added in order to add this pci device in qemu)*
 
 * Inside the VM, compile the frontend driver and add the module into the kernel running
 
