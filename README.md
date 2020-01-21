@@ -46,6 +46,7 @@ $ sudo tcpdump -A -i lo tcp -nnn -XXX -vvv
 *In the encrypted chat the original data sent shouldn't be understood.*
 
 ### Driver
+*(The host machine should have the [cryptodev module](http://cryptodev-linux.org/documentation.html) loaded!)*
 
 * Clone or download the repository.
 
