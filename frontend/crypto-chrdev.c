@@ -120,11 +120,20 @@ static int crypto_chrdev_open(struct inode *inode, struct file *filp)
 	/**
 	 * Wait for the host to process our data.
 	 **/
+    //I implement it with spinlocks because the code inside it
+    //is small. Otherwise sleep in queue would be the most efficient
+    //way to deal with the below critical section.
+    //Bare in mind that the interrupt handler (vq_has_data) should
+    //have the appropriate code to wake me up when I have data.
+    //what about the id in virtqueue_add_sgs? how would it help to
+    //identify the current (process??)
     spin_lock_irqsave(&crdev->lock, flags);     //IS IRQSAVE NEEDED??
 
     err = virtqueue_add_sgs(crdev->vq, sgs, num_out, num_in, \
                                 &syscall_type_sg, GFP_ATOMIC);
     virtqueue_kick(crdev->vq);
+    //the following ckecks the two ring buffer's pointers.
+    //if they match then I have no data and I return NULL
     while(virtqueue_get_buf(crdev->vq, &len) == NULL)
         ; //Do nothing
 

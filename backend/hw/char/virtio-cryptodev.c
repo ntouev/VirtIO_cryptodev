@@ -66,7 +66,7 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
     unsigned char *src, *dst, *iv;
     //uint16_t *op;
 
-    //fd_ptr should be head allocated
+    //fd_ptr should be heap allocated WHY??
     int *fd_ptr, *fd_ptr_to_close;
 
     DEBUG_IN();
@@ -171,7 +171,14 @@ static void vq_handle_output(VirtIODevice *vdev, VirtQueue *vq)
         break;
     }
 
+    //push the data in the VirtIO ring buffer
     virtqueue_push(vq, elem, 0);
+    //notifies the frontend driver that the work is done via interrupt
+    //bare in mind that qemu (backend) is the hardware of the VM.
+    //here is not needed because frontend ckecks if the work is done
+    //looking the two pointers in the ring buffer. In order to apply this
+    //method of checking (using the interrupt), you should change the interrupt
+    //handler (function vq_has_data() in file crypto-module.c).
     virtio_notify(vdev, vq);
     g_free(elem);
 }
